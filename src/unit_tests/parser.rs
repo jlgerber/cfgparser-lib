@@ -22,23 +22,54 @@ fn alpha_alphanum_given_1abc_fails_to_parse() {
 }
 
 #[test]
-fn sep_ann_given_fofo_can_parse() {
+fn underscore_alpha_alphanum_given_fofo_can_parse() {
     fn parser(input: &str) -> IResult<&str, &str> {
         complete(underscore_alpha_alphanum)(input)
     }
     let result = parser("_fofo");
     assert_eq!(result, Ok(("", "_fofo")));
 }
-
+// Here we are testing that 
 #[test]
-fn underscore_alpha_alphanum_seq_given_a13b_fofo_can_parse() {
+fn alpha_alphanum_underscore_alpha_alphanum_seq_given_a_word_followed_by_multiple_underscore_words_can_parse() {
     fn parser(input: &str) -> IResult<&str, &str> {
-        complete(underscore_alpha_alphanum_seq)(input)
+        complete(alpha_alphanum_underscore_alpha_alphanum_seq)(input)
     }
-    let result = parser("a13b_fofo");
-    assert_eq!(result, Ok(("", "a13b_fofo")));
+    let result = parser("a13b_fofo_bla");
+    assert_eq!(result, Ok(("", "a13b_fofo_bla")));
+}
+// Here we are testing that the parser for an underscore followed
+// by a word (a-zA-Z0-9) can parse
+#[test]
+fn underscore_alphanum_given_input_starting_with_number_can_parse() {
+    fn parser(input: &str) -> IResult<&str, &str> {
+        complete(underscore_alphanum)(input)
+    }
+    let result = parser("_1fofo");
+    assert_eq!(result, Ok(("", "_1fofo")));
 }
 
+#[test]
+fn underscore_alphanum_given_input_starting_with_letter_can_parse() {
+    fn parser(input: &str) -> IResult<&str, &str> {
+        complete(underscore_alphanum)(input)
+    }
+    let result = parser("_fofo");
+    assert_eq!(result, Ok(("", "_fofo")));
+}
+
+// test that the parser which takes a word starting with a letter followed by
+// zero or more words separated by single underscores can parse. Note that other
+// than the first word, we do not care if subsequent words start with a number or
+// letter.
+#[test]
+fn alpha_alphanum_underscore_alphanum_seq_given_input_starting_with_num_can_parse() {
+    fn parser(input: &str) -> IResult<&str, &str> {
+        complete(alpha_alphanum_underscore_alphanum_seq)(input)
+    }
+    let result = parser("dude_123_1fofo");
+    assert_eq!(result, Ok(("", "dude_123_1fofo")));
+}
 #[test]
 fn underscore_alpha_alphanum2_given_input_can_parse() {
     fn parser(input: &str) -> IResult<&str, &str> {

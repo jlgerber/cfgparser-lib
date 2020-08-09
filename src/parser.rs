@@ -2,6 +2,7 @@ use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::alpha1;
 use nom::character::complete::alphanumeric0;
+use nom::character::complete::alphanumeric1;
 use nom::character::complete::multispace0;
 use nom::character::complete::newline;
 use nom::combinator::all_consuming;
@@ -48,13 +49,28 @@ pub fn alpha_alphanum(input: &str) -> IResult<&str, &str> {
 /// let result = complete(underscore_alpha_alphanum)("_foobar");
 /// assert_eq!(result, Ok(("","_foobar")));
 /// ```
+// NOT USED
 pub fn underscore_alpha_alphanum(input: &str) -> IResult<&str, &str> {
     recognize(pair(tag("_"), alpha_alphanum))(input)
+}
+/// Parse a single underscore followed by an alphanum
+///
+/// # Example
+///
+/// ```
+/// use cfgparser::underscore_alphanum;
+/// use nom::combinator::complete;
+///
+/// let result = complete(underscore_alphanum)("_1foo1");
+/// assert_eq!(result, Ok(("","_1foo1")));
+/// ```
+pub fn underscore_alphanum(input: &str) -> IResult<&str, &str> {
+    recognize(pair(tag("_"), alphanumeric1))(input)
 }
 
 /// Parse an underscore followed by a str starting with a letter
 /// followed by zero or more letters or numbers. Discard the
-/// underscore
+/// underscore in the returned value
 ///
 /// # Examples
 ///
@@ -96,6 +112,7 @@ pub fn underscore_alpha_alphanum(input: &str) -> IResult<&str, &str> {
 /// let result = parser("foo_bar_bla");
 /// assert_eq!(result, Ok(("",("foo", vec!["bar", "bla"]))))
 /// ```
+// NOT USED
 pub fn underscore_alpha_alphanum2(input: &str) -> IResult<&str, &str> {
     preceded(tag("_"), alpha_alphanum)(input)
 }
@@ -106,14 +123,29 @@ pub fn underscore_alpha_alphanum2(input: &str) -> IResult<&str, &str> {
 /// # Examples
 ///
 /// ```
-/// use cfgparser::underscore_alpha_alphanum_seq;
+/// use cfgparser::alpha_alphanum_underscore_alpha_alphanum_seq;
 /// use nom::combinator::complete;
 ///
-/// let result = complete(underscore_alpha_alphanum_seq)("fred1_bla_foobar");
+/// let result = complete(alpha_alphanum_underscore_alpha_alphanum_seq)("fred1_bla_foobar");
 /// assert_eq!(result, Ok(("","fred1_bla_foobar")));
 /// ```
-pub fn underscore_alpha_alphanum_seq(input: &str) -> IResult<&str, &str> {
+pub fn alpha_alphanum_underscore_alpha_alphanum_seq(input: &str) -> IResult<&str, &str> {
     recognize(pair(alpha_alphanum, many0(underscore_alpha_alphanum)))(input)
+}
+/// Given a str starting with an alpha_alphanum, and followed by zero or more underscore_alpha_alphamums,
+/// parse it.
+///
+/// # Examples
+///
+/// ```
+/// use cfgparser::alpha_alphanum_underscore_alphanum_seq;
+/// use nom::combinator::complete;
+///
+/// let result = complete(alpha_alphanum_underscore_alphanum_seq)("fred1_1bla_foobar");
+/// assert_eq!(result, Ok(("","fred1_1bla_foobar")));
+/// ```
+pub fn alpha_alphanum_underscore_alphanum_seq(input: &str) -> IResult<&str, &str> {
+    recognize(pair(alpha_alphanum, many0(underscore_alphanum)))(input)
 }
 
 // match a basic header. That is something that matches the following pattern:
@@ -123,7 +155,7 @@ fn header(input: &str) -> IResult<&str, &str> {
         space0,
         tag("["),
         space0,
-        underscore_alpha_alphanum_seq,
+        alpha_alphanum_underscore_alphanum_seq,
         space0,
         tag("]"),
         space0,
@@ -147,8 +179,8 @@ fn header_newline(input: &str) -> IResult<&str, &str> {
 /// ```
 /// use cfgparser::header_line;
 ///
-/// let result = header_line("[the_first_thing]");
-/// assert_eq!(result, Ok(("","the_first_thing")));
+/// let result = header_line("[the_first_1thing]");
+/// assert_eq!(result, Ok(("","the_first_1thing")));
 /// ```
 pub fn header_line(input: &str) -> IResult<&str, &str> {
     alt((header_newline, complete(header)))(input)
@@ -178,7 +210,7 @@ where
 ///
 pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
-        underscore_alpha_alphanum_seq,
+        alpha_alphanum_underscore_alpha_alphanum_seq,
         space0,
         tag("="),
         space0,
@@ -190,7 +222,7 @@ pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
 }
 pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
-        underscore_alpha_alphanum_seq,
+        alpha_alphanum_underscore_alpha_alphanum_seq,
         space0,
         tag("="),
         space0,

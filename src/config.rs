@@ -14,7 +14,7 @@ use indexmap::IndexMap as HashMap;
 #[cfg(feature = "ordered")]
 use indexmap::map::Values;
 
-/// Cofig structure
+/// Config structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct Config<'b> {
     sections: HashMap<&'b str, Section<'b>>,
@@ -62,7 +62,7 @@ impl<'b> Config<'b> {
     /// # fn main() -> Result<(),Box<dyn std::error::Error>> {
     /// let contents = r#"
     /// [playa]
-    /// name = Playa Vista
+    /// name = PlayaVista
     /// short_name = ddpv
     /// prefix = dd
     ///
@@ -70,6 +70,7 @@ impl<'b> Config<'b> {
     /// name = Portland
     /// short_name = ddpd
     /// prefix = pd
+    ///
     /// "#;
     ///
     /// let config = Config::parse_cfg(contents)?;
