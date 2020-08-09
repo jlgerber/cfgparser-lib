@@ -1,4 +1,4 @@
-use crate::parser::parse_cfg;
+use crate::parser::parse_cfg_from_str;
 use crate::Section;
 use crate::SectionOwned;
 
@@ -73,15 +73,15 @@ impl<'b> Config<'b> {
     ///
     /// "#;
     ///
-    /// let config = Config::parse_cfg(contents)?;
+    /// let config = Config::parse_cfg_from_str(contents)?;
     /// for section in config.sections() {
     ///     println!("{:#?}", section);
     /// }
     /// # Ok(())
     /// # }
     /// ```
-    pub fn parse_cfg(input: &'b str) -> Result<Self, String> {
-        match parse_cfg(input) {
+    pub fn parse_cfg_from_str(input: &'b str) -> Result<Self, String> {
+        match parse_cfg_from_str(input) {
             Ok((_, sections)) => {
                 let mut cfg = Self::new();
                 for section in sections.into_iter() {

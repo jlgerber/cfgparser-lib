@@ -11,7 +11,7 @@ the = way
 name = France.d3.com
 short_name = fr
 "#;
-    let result = Config::parse_cfg(contents);
+    let result = Config::parse_cfg_from_str(contents);
     let mut config = Config::new();
     let mut section = Section::new("test");
     section.insert("this", "is");

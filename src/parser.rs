@@ -46,22 +46,6 @@ pub fn alphaword(input: &str) -> IResult<&str, &str> {
     recognize(pair(alpha1, alphanumeric0))(input)
 }
 
-/// Parse a single underscore followed by an alphaword (str starting with a letter followed by
-/// zero or more letters or numbers)
-///
-/// # Example
-///
-/// ```
-/// use cfgparser::underscore_alphaword;
-/// use nom::combinator::complete;
-///
-/// let result = complete(underscore_alphaword)("_foobar");
-/// assert_eq!(result, Ok(("","_foobar")));
-/// ```
-// NOT USED
-pub fn underscore_alphaword(input: &str) -> IResult<&str, &str> {
-    recognize(pair(tag("_"), alphaword))(input)
-}
 /// Parse a single underscore followed by an alphanum
 ///
 /// # Example
@@ -126,22 +110,7 @@ pub fn underscore_alphaword_drop_underscore(input: &str) -> IResult<&str, &str> 
     preceded(tag("_"), alphaword)(input)
 }
 
-/// Given a str starting with an alphaword, and followed by zero or more underscore_alpha_alphamums,
-/// parse it.
-///
-/// # Examples
-///
-/// ```
-/// use cfgparser::alphaword_many0_underscore_alphaword;
-/// use nom::combinator::complete;
-///
-/// let result = complete(alphaword_many0_underscore_alphaword)("fred1_bla_foobar");
-/// assert_eq!(result, Ok(("","fred1_bla_foobar")));
-/// ```
-pub fn alphaword_many0_underscore_alphaword(input: &str) -> IResult<&str, &str> {
-    recognize(pair(alphaword, many0(underscore_alphaword)))(input)
-}
-/// Given a str starting with an alphaword, and followed by zero or more underscore_alpha_alphamums,
+/// Given a str starting with an alphaword, and followed by zero or more _words,
 /// parse it.
 ///
 /// # Examples
@@ -195,9 +164,9 @@ pub fn header_line(input: &str) -> IResult<&str, &str> {
     alt((header_newline, complete(header)))(input)
 }
 
-/// parse a string, consuming characters until encountering an "illegal" character
-/// at which point parsing stops making progress
-pub fn until_illegal_char<T, E: ParseError<T>>(input: T) -> IResult<T, T, E>
+// parse a string, consuming characters until encountering an "illegal" character
+// at which point parsing stops making progress
+fn until_illegal_char<T, E: ParseError<T>>(input: T) -> IResult<T, T, E>
 where
     T: InputTakeAtPosition,
     <T as InputTakeAtPosition>::Item: AsChar,
@@ -219,7 +188,7 @@ where
 ///
 pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
-        alphaword_many0_underscore_alphaword,
+        alphaword_many0_underscore_word,
         space0,
         tag("="),
         space0,
@@ -229,9 +198,10 @@ pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
     let (remaining, (key, _, _, _, value, _)) = result;
     Ok((remaining, (key, value)))
 }
+/// parse a key
 pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
-        alphaword_many0_underscore_alphaword,
+        alphaword_many0_underscore_word,
         space0,
         tag("="),
         space0,
@@ -269,7 +239,7 @@ pub fn parse_sections(input: &str) -> IResult<&str, Vec<Section>> {
 }
 
 /// Given a config, return
-pub fn parse_cfg(input: &str) -> IResult<&str, Vec<Section>> {
+pub fn parse_cfg_from_str(input: &str) -> IResult<&str, Vec<Section>> {
     all_consuming(parse_sections)(input)
 }
 

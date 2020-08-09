@@ -28,6 +28,6 @@ where
     P: AsRef<Path>,
 {
     let config_str = std::fs::read_to_string(cfg_path.as_ref())?;
-    let config = Config::parse_cfg(config_str.as_str())?;
+    let config = Config::parse_cfg_from_str(config_str.as_str())?;
     Ok(config.to_owned())
 }

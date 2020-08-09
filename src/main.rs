@@ -14,7 +14,7 @@ prefix = pd
 
 ";
 
-    let config = Config::parse_cfg(contents)?;
+    let config = Config::parse_cfg_from_str(contents)?;
     println!("{:#?}", config);
     for section in config.sections() {
         println!("{:?}", section);

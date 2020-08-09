@@ -21,24 +21,6 @@ fn alphaword_given_1abc_fails_to_parse() {
     assert_eq!(result, Err(Err::Error(("1abc", ErrorKind::Alpha))));
 }
 
-#[test]
-fn underscore_alphaword_given_fofo_can_parse() {
-    fn parser(input: &str) -> IResult<&str, &str> {
-        complete(underscore_alphaword)(input)
-    }
-    let result = parser("_fofo");
-    assert_eq!(result, Ok(("", "_fofo")));
-}
-// Here we are testing that
-#[test]
-fn alphaword_many0_underscore_alphaword_given_a_word_followed_by_multiple_underscore_words_can_parse(
-) {
-    fn parser(input: &str) -> IResult<&str, &str> {
-        complete(alphaword_many0_underscore_alphaword)(input)
-    }
-    let result = parser("a13b_fofo_bla");
-    assert_eq!(result, Ok(("", "a13b_fofo_bla")));
-}
 // Here we are testing that the parser for an underscore followed
 // by a word (a-zA-Z0-9) can parse
 #[test]
@@ -240,7 +222,7 @@ foo = is
 the = bar
 
 "#;
-    let result = parse_cfg(sections);
+    let result = parse_cfg_from_str(sections);
     let mut section1 = Section::new("test");
     section1.insert("this", "is");
     section1.insert("the", "way");
