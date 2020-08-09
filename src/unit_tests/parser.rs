@@ -4,7 +4,7 @@ use nom::error::ErrorKind;
 use nom::Err;
 
 #[test]
-fn alphaword_given_a13b_can_parse() {
+fn alphaword_given_word_starting_with_letter_can_parse() {
     fn parser(input: &str) -> IResult<&str, &str> {
         complete(alphaword)(input)
     }
@@ -13,7 +13,7 @@ fn alphaword_given_a13b_can_parse() {
 }
 
 #[test]
-fn alphaword_given_1abc_fails_to_parse() {
+fn alphaword_given_word_starting_with_number_fails_to_parse() {
     fn parser(input: &str) -> IResult<&str, &str> {
         complete(alphaword)(input)
     }
@@ -52,14 +52,6 @@ fn alphaword_many0_underscore_word_given_input_starting_with_num_can_parse() {
     }
     let result = parser("dude_123_1fofo");
     assert_eq!(result, Ok(("", "dude_123_1fofo")));
-}
-#[test]
-fn underscore_alphaword_drop_underscore_given_input_can_parse() {
-    fn parser(input: &str) -> IResult<&str, &str> {
-        complete(underscore_alphaword_drop_underscore)(input)
-    }
-    let result = parser("_fofo");
-    assert_eq!(result, Ok(("", "fofo")));
 }
 
 #[test]
@@ -115,6 +107,15 @@ fn key_value_pair_given_valid_input_can_parse() {
 }
 
 #[test]
+fn key_value_pair_given_valid_input_starting_with_space_can_parse() {
+    fn parser(input: &str) -> IResult<&str, (&str, &str)> {
+        key_value_pair(input)
+    }
+    let result = parser("  this_key = val123-543_bla");
+    assert_eq!(result, Ok(("", ("this_key", "val123-543_bla"))));
+}
+
+#[test]
 fn key_value_pair_given_valid_input2_can_parse() {
     fn parser(input: &str) -> IResult<&str, (&str, &str)> {
         key_value_pair(input)
@@ -166,7 +167,7 @@ fn key_value_pair_line_given_valid_input_ending_with_spaces_can_parse() {
     fn parser(input: &str) -> IResult<&str, (&str, &str)> {
         key_value_pair_line(input)
     }
-    let result = parser("this_key = val123-543_bla   ");
+    let result = parser("  this_key = val123-543_bla   ");
     assert_eq!(result, Ok(("", ("this_key", "val123-543_bla"))));
 }
 
@@ -177,6 +178,22 @@ fn parse_section_given_section_with_empty_lines_can_parse() {
 [test]
 this = is
 the = way
+
+"#;
+    let result = parse_section(section);
+    let mut expected = Section::new("test");
+    expected.insert("this", "is");
+    expected.insert("the", "way");
+    assert_eq!(result, Ok(("", expected)));
+}
+
+#[test]
+fn parse_section_given_section_with_empty_lines_and_spaces_can_parse() {
+    let section = r#"
+    
+ [test]
+  this = is
+   the = way
 
 "#;
     let result = parse_section(section);
@@ -210,7 +227,7 @@ the = bar
 }
 
 #[test]
-fn parse_cfg_given_section_with_empty_lines_can_parse() {
+fn parse_cfg_from_str_given_section_with_empty_lines_can_parse() {
     let sections = r#"
     
 [test]
@@ -222,6 +239,50 @@ foo = is
 the = bar
 
 "#;
+    let result = parse_cfg_from_str(sections);
+    let mut section1 = Section::new("test");
+    section1.insert("this", "is");
+    section1.insert("the", "way");
+    let mut section2 = Section::new("test2");
+    section2.insert("foo", "is");
+    section2.insert("the", "bar");
+    assert_eq!(result, Ok(("", vec![section1, section2])));
+}
+
+#[test]
+fn parse_cfg_from_str_given_section_with_empty_lines_and_spaces_can_parse() {
+    let sections = r#"
+    
+  [ test ]
+    this = is
+the = way
+
+ [test2   ]
+ foo = is
+    the = bar
+
+"#;
+    let result = parse_cfg_from_str(sections);
+    let mut section1 = Section::new("test");
+    section1.insert("this", "is");
+    section1.insert("the", "way");
+    let mut section2 = Section::new("test2");
+    section2.insert("foo", "is");
+    section2.insert("the", "bar");
+    assert_eq!(result, Ok(("", vec![section1, section2])));
+}
+
+#[test]
+fn parse_cfg_from_str_given_section_with_no_empty_last_line_can_parse() {
+    let sections = r#"
+    
+[test]
+this = is
+the = way
+
+[test2]
+foo = is
+the = bar"#;
     let result = parse_cfg_from_str(sections);
     let mut section1 = Section::new("test");
     section1.insert("this", "is");
