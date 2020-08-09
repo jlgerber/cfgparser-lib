@@ -23,7 +23,7 @@ use nom::error::ParseError;
 use nom::multi::many0;
 use nom::multi::many1;
 use nom::sequence::pair;
-use nom::sequence::preceded;
+//use nom::sequence::preceded;
 use nom::sequence::terminated;
 use nom::sequence::tuple;
 use nom::IResult;
@@ -61,55 +61,6 @@ pub fn underscore_word(input: &str) -> IResult<&str, &str> {
     recognize(pair(tag("_"), alphanumeric1))(input)
 }
 
-/// Parse an underscore followed by a str starting with a letter
-/// followed by zero or more letters or numbers. Discard the
-/// underscore in the returned value
-///
-/// # Examples
-///
-/// ```
-/// use cfgparser::underscore_alphaword_drop_underscore;
-/// use nom::combinator::complete;
-///
-/// let result = complete(underscore_alphaword_drop_underscore)("_foobar");
-/// assert_eq!(result, Ok(("","foobar")));
-/// ```
-/// We can use this function as the basis for parsing something like
-/// role[_subrole[_subsubrole]].
-///
-/// ```
-/// use cfgparser::underscore_alphaword_drop_underscore;
-/// use cfgparser::alphaword;
-/// use nom::combinator::complete;
-/// use nom::sequence::tuple;
-/// use nom::multi::fold_many0;
-/// use nom::sequence::pair;
-/// use nom::IResult;
-///
-/// // this is an example of the power of nom's composition
-/// fn parser(s: &str) -> IResult<&str,(&str, Vec<&str>)> {
-///    complete(
-///      pair(
-///          alphaword,
-///          fold_many0(
-///            underscore_alphaword_drop_underscore,
-///            Vec::new(),
-///            |mut acc: Vec<_>, item| {
-///               acc.push(item);
-///               acc
-///             }
-///           ) // fold_many0 end
-///        ) // pair end
-///      )(s) // complete end
-/// }
-/// let result = parser("foo_bar_bla");
-/// assert_eq!(result, Ok(("",("foo", vec!["bar", "bla"]))))
-/// ```
-// NOT USED
-pub fn underscore_alphaword_drop_underscore(input: &str) -> IResult<&str, &str> {
-    preceded(tag("_"), alphaword)(input)
-}
-
 /// Given a str starting with an alphaword, and followed by zero or more _words,
 /// parse it.
 ///
@@ -145,22 +96,22 @@ fn header(input: &str) -> IResult<&str, &str> {
 fn header_newline(input: &str) -> IResult<&str, &str> {
     terminated(header, newline)(input)
 }
-/// Match the header of the cfg
-///
-/// we accept the following
-/// - '[name]'
-/// - '[name_with_under]'
-/// - '   [ name_with_various_spaces  ]  '
-///
-/// # Example
-///
-/// ```
-/// use cfgparser::header_line;
-///
-/// let result = header_line("[the_first_1thing]");
-/// assert_eq!(result, Ok(("","the_first_1thing")));
-/// ```
-pub fn header_line(input: &str) -> IResult<&str, &str> {
+// Match the header of the cfg
+//
+// we accept the following
+// - '[name]'
+// - '[name_with_under]'
+// - '   [ name_with_various_spaces  ]  '
+//
+// # Example
+//
+// ```
+// use cfgparser::header_line;
+//
+// let result = header_line("[the_first_1thing]");
+// assert_eq!(result, Ok(("","the_first_1thing")));
+// ```
+fn header_line(input: &str) -> IResult<&str, &str> {
     alt((header_newline, complete(header)))(input)
 }
 
@@ -179,15 +130,11 @@ where
     })
 }
 
-/// parse out a key value pair from a cfg given a line like
-/// key = value
-///
-/// # Example
-///
-/// ```
-///
-pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
+// parse out a key value pair from a cfg given a line like
+// key = value
+fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
+        space0,
         alphaword_many0_underscore_word,
         space0,
         tag("="),
@@ -195,12 +142,13 @@ pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
         until_illegal_char,
         space0,
     ))(input)?;
-    let (remaining, (key, _, _, _, value, _)) = result;
+    let (remaining, (_, key, _, _, _, value, _)) = result;
     Ok((remaining, (key, value)))
 }
-/// parse a key
+/// parse a key value pair followed by a newline.
 pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
+        space0,
         alphaword_many0_underscore_word,
         space0,
         tag("="),
@@ -209,22 +157,28 @@ pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
         space0,
         newline,
     ))(input)?;
-    let (remaining, (key, _, _, _, value, _, _)) = result;
+    let (remaining, (_, key, _, _, _, value, _, _)) = result;
     Ok((remaining, (key, value)))
 }
 
-/// read a line defining a key value pair. either it ends in a carriage return,
-/// or it ends the file (ie it is complete)
-pub fn key_value_pair_line(input: &str) -> IResult<&str, (&str, &str)> {
+// read a line defining a key value pair. either it ends in a carriage return,
+// or it ends the file (ie it is complete)
+fn key_value_pair_line(input: &str) -> IResult<&str, (&str, &str)> {
     alt((key_value_pair_newline, complete(key_value_pair)))(input)
 }
-
-fn eol(input: &str) -> IResult<&str, &str> {
+/// Optionally space prefixed end of line. This is broken out in order to
+/// facilitate adding support for comments
+pub fn space0_eol(input: &str) -> IResult<&str, &str> {
     multispace0(input)
 }
 /// parse a section
-pub fn parse_section(input: &str) -> IResult<&str, Section> {
-    let results = tuple((eol, header_line, many1(key_value_pair_line), eol))(input)?;
+fn parse_section(input: &str) -> IResult<&str, Section> {
+    let results = tuple((
+        space0_eol,
+        header_line,
+        many1(key_value_pair_line),
+        space0_eol,
+    ))(input)?;
 
     let (rest, (_, key, kvpairs, _)) = results;
     let mut section = Section::new(key);
@@ -234,7 +188,8 @@ pub fn parse_section(input: &str) -> IResult<&str, Section> {
     Ok((rest, section))
 }
 
-pub fn parse_sections(input: &str) -> IResult<&str, Vec<Section>> {
+// Parse multiple sections, having at least one section.
+fn parse_sections(input: &str) -> IResult<&str, Vec<Section>> {
     many1(parse_section)(input)
 }
 

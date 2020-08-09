@@ -101,3 +101,12 @@ fn alphaword_many0_underscore_alphaword_given_a_word_followed_by_multiple_unders
     let result = parser("a13b_fofo_bla");
     assert_eq!(result, Ok(("", "a13b_fofo_bla")));
 }
+
+#[test]
+fn underscore_alphaword_drop_underscore_given_input_can_parse() {
+    fn parser(input: &str) -> IResult<&str, &str> {
+        complete(underscore_alphaword_drop_underscore)(input)
+    }
+    let result = parser("_fofo");
+    assert_eq!(result, Ok(("", "fofo")));
+}
