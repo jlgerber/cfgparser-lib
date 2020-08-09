@@ -1,16 +1,25 @@
+use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::alpha1;
 use nom::character::complete::alphanumeric0;
+use nom::character::complete::multispace0;
+use nom::character::complete::newline;
+use nom::combinator::all_consuming;
+use nom::combinator::complete;
+use nom::{AsChar, InputTakeAtPosition};
 //use nom::character::complete::none_of;
 use nom::character::complete::space0;
 use nom::combinator::recognize;
+use nom::error::ParseError;
 use nom::multi::many0;
-//use nom::multi::many1;
+use nom::multi::many1;
 use nom::sequence::pair;
 use nom::sequence::preceded;
+use nom::sequence::terminated;
 use nom::sequence::tuple;
 use nom::IResult;
 
+use crate::Section;
 /// Parse a str that starts with a letter, followed by zero or more
 /// letters and/or numbers
 ///
@@ -107,23 +116,9 @@ pub fn underscore_alpha_alphanum_seq(input: &str) -> IResult<&str, &str> {
     recognize(pair(alpha_alphanum, many0(underscore_alpha_alphanum)))(input)
 }
 
-/// Match the header of the cfg
-///
-/// we accept the following
-/// - '[name]'
-/// - '[name_with_under]'
-/// - '   [ name_with_various_spaces  ]  '
-///
-/// # Example
-///
-/// ```
-/// use cfgparser::header;
-/// use nom::combinator::complete;
-///
-/// let result = complete(header)("[the_first_thing]");
-/// assert_eq!(result, Ok(("","the_first_thing")));
-/// ```
-pub fn header(input: &str) -> IResult<&str, &str> {
+// match a basic header. That is something that matches the following pattern:
+// [key]
+fn header(input: &str) -> IResult<&str, &str> {
     let result = tuple((
         space0,
         tag("["),
@@ -136,8 +131,28 @@ pub fn header(input: &str) -> IResult<&str, &str> {
     let (remaining, (_, _, _, key, _, _, _)) = result;
     Ok((remaining, key))
 }
-use nom::error::ParseError;
-use nom::{AsChar, InputTakeAtPosition};
+// Take header with a newline at the end
+fn header_newline(input: &str) -> IResult<&str, &str> {
+    terminated(header, newline)(input)
+}
+/// Match the header of the cfg
+///
+/// we accept the following
+/// - '[name]'
+/// - '[name_with_under]'
+/// - '   [ name_with_various_spaces  ]  '
+///
+/// # Example
+///
+/// ```
+/// use cfgparser::header_line;
+///
+/// let result = header_line("[the_first_thing]");
+/// assert_eq!(result, Ok(("","the_first_thing")));
+/// ```
+pub fn header_line(input: &str) -> IResult<&str, &str> {
+    alt((header_newline, complete(header)))(input)
+}
 
 /// parse a string, consuming characters until encountering an "illegal" character
 /// at which point parsing stops making progress
@@ -173,7 +188,50 @@ pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
     let (remaining, (key, _, _, _, value, _)) = result;
     Ok((remaining, (key, value)))
 }
+pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
+    let result = tuple((
+        underscore_alpha_alphanum_seq,
+        space0,
+        tag("="),
+        space0,
+        until_illegal_char,
+        space0,
+        newline,
+    ))(input)?;
+    let (remaining, (key, _, _, _, value, _, _)) = result;
+    Ok((remaining, (key, value)))
+}
+
+/// read a line defining a key value pair. either it ends in a carriage return,
+/// or it ends the file (ie it is complete)
+pub fn key_value_pair_line(input: &str) -> IResult<&str, (&str, &str)> {
+    alt((key_value_pair_newline, complete(key_value_pair)))(input)
+}
+
+fn eol(input: &str) -> IResult<&str, &str> {
+    multispace0(input)
+}
+/// parse a section
+pub fn parse_section(input: &str) -> IResult<&str, Section> {
+    let results = tuple((eol, header_line, many1(key_value_pair_line), eol))(input)?;
+
+    let (rest, (_, key, kvpairs, _)) = results;
+    let mut section = Section::new(key);
+    for value in kvpairs {
+        section.insert(value.0, value.1);
+    }
+    Ok((rest, section))
+}
+
+pub fn parse_sections(input: &str) -> IResult<&str, Vec<Section>> {
+    many1(parse_section)(input)
+}
+
+/// Given a config, return
+pub fn parse_cfg(input: &str) -> IResult<&str, Vec<Section>> {
+    all_consuming(parse_sections)(input)
+}
 
 #[cfg(test)]
-#[path = "./parser_tests.rs"]
-mod tests;
+#[path = "./unit_tests/parser.rs"]
+mod unit_tests;
