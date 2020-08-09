@@ -92,6 +92,7 @@ fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
     let (remaining, (_, key, _, _, _, value, _)) = result;
     Ok((remaining, (key, value)))
 }
+
 /// parse a key value pair followed by a newline.
 pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
@@ -108,7 +109,7 @@ pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
     Ok((remaining, (key, value)))
 }
 
-// read a line defining a key value pair. either it ends in a carriage return,
+// Read a line defining a key value pair. either it ends in a carriage return,
 // or it ends the file (ie it is complete)
 fn key_value_pair_line(input: &str) -> IResult<&str, (&str, &str)> {
     alt((key_value_pair_newline, complete(key_value_pair)))(input)
