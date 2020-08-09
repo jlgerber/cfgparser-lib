@@ -1,3 +1,11 @@
+//! parser
+//!
+//! This module houses the nom parser implementation.
+//! ```parser::*``` uses to the following naming convention:
+//!
+//! - *alphaword* - a word comprised of letters and numbers, starting with a leter
+//! - *word* - a word comprised of letters and numbers
+//!
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::alpha1;
@@ -21,50 +29,51 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 use crate::Section;
+
 /// Parse a str that starts with a letter, followed by zero or more
 /// letters and/or numbers
 ///
 /// # Example
 ///
 /// ```
-/// use cfgparser::alpha_alphanum;
+/// use cfgparser::alphaword;
 /// use nom::combinator::complete;
 ///
-/// let result = complete(alpha_alphanum)("a123a5");
+/// let result = complete(alphaword)("a123a5");
 /// assert_eq!(result, Ok(("","a123a5")));
 /// ```
-pub fn alpha_alphanum(input: &str) -> IResult<&str, &str> {
+pub fn alphaword(input: &str) -> IResult<&str, &str> {
     recognize(pair(alpha1, alphanumeric0))(input)
 }
 
-/// Parse a single underscore followed by an alpha_alphanum (str starting with a letter followed by
+/// Parse a single underscore followed by an alphaword (str starting with a letter followed by
 /// zero or more letters or numbers)
 ///
 /// # Example
 ///
 /// ```
-/// use cfgparser::underscore_alpha_alphanum;
+/// use cfgparser::underscore_alphaword;
 /// use nom::combinator::complete;
 ///
-/// let result = complete(underscore_alpha_alphanum)("_foobar");
+/// let result = complete(underscore_alphaword)("_foobar");
 /// assert_eq!(result, Ok(("","_foobar")));
 /// ```
 // NOT USED
-pub fn underscore_alpha_alphanum(input: &str) -> IResult<&str, &str> {
-    recognize(pair(tag("_"), alpha_alphanum))(input)
+pub fn underscore_alphaword(input: &str) -> IResult<&str, &str> {
+    recognize(pair(tag("_"), alphaword))(input)
 }
 /// Parse a single underscore followed by an alphanum
 ///
 /// # Example
 ///
 /// ```
-/// use cfgparser::underscore_alphanum;
+/// use cfgparser::underscore_word;
 /// use nom::combinator::complete;
 ///
-/// let result = complete(underscore_alphanum)("_1foo1");
+/// let result = complete(underscore_word)("_1foo1");
 /// assert_eq!(result, Ok(("","_1foo1")));
 /// ```
-pub fn underscore_alphanum(input: &str) -> IResult<&str, &str> {
+pub fn underscore_word(input: &str) -> IResult<&str, &str> {
     recognize(pair(tag("_"), alphanumeric1))(input)
 }
 
@@ -75,18 +84,18 @@ pub fn underscore_alphanum(input: &str) -> IResult<&str, &str> {
 /// # Examples
 ///
 /// ```
-/// use cfgparser::underscore_alpha_alphanum2;
+/// use cfgparser::underscore_alphaword_drop_underscore;
 /// use nom::combinator::complete;
 ///
-/// let result = complete(underscore_alpha_alphanum2)("_foobar");
+/// let result = complete(underscore_alphaword_drop_underscore)("_foobar");
 /// assert_eq!(result, Ok(("","foobar")));
 /// ```
 /// We can use this function as the basis for parsing something like
 /// role[_subrole[_subsubrole]].
 ///
 /// ```
-/// use cfgparser::underscore_alpha_alphanum2;
-/// use cfgparser::alpha_alphanum;
+/// use cfgparser::underscore_alphaword_drop_underscore;
+/// use cfgparser::alphaword;
 /// use nom::combinator::complete;
 /// use nom::sequence::tuple;
 /// use nom::multi::fold_many0;
@@ -97,9 +106,9 @@ pub fn underscore_alphanum(input: &str) -> IResult<&str, &str> {
 /// fn parser(s: &str) -> IResult<&str,(&str, Vec<&str>)> {
 ///    complete(
 ///      pair(
-///          alpha_alphanum,
+///          alphaword,
 ///          fold_many0(
-///            underscore_alpha_alphanum2,
+///            underscore_alphaword_drop_underscore,
 ///            Vec::new(),
 ///            |mut acc: Vec<_>, item| {
 ///               acc.push(item);
@@ -113,39 +122,39 @@ pub fn underscore_alphanum(input: &str) -> IResult<&str, &str> {
 /// assert_eq!(result, Ok(("",("foo", vec!["bar", "bla"]))))
 /// ```
 // NOT USED
-pub fn underscore_alpha_alphanum2(input: &str) -> IResult<&str, &str> {
-    preceded(tag("_"), alpha_alphanum)(input)
+pub fn underscore_alphaword_drop_underscore(input: &str) -> IResult<&str, &str> {
+    preceded(tag("_"), alphaword)(input)
 }
 
-/// Given a str starting with an alpha_alphanum, and followed by zero or more underscore_alpha_alphamums,
+/// Given a str starting with an alphaword, and followed by zero or more underscore_alpha_alphamums,
 /// parse it.
 ///
 /// # Examples
 ///
 /// ```
-/// use cfgparser::alpha_alphanum_underscore_alpha_alphanum_seq;
+/// use cfgparser::alphaword_many0_underscore_alphaword;
 /// use nom::combinator::complete;
 ///
-/// let result = complete(alpha_alphanum_underscore_alpha_alphanum_seq)("fred1_bla_foobar");
+/// let result = complete(alphaword_many0_underscore_alphaword)("fred1_bla_foobar");
 /// assert_eq!(result, Ok(("","fred1_bla_foobar")));
 /// ```
-pub fn alpha_alphanum_underscore_alpha_alphanum_seq(input: &str) -> IResult<&str, &str> {
-    recognize(pair(alpha_alphanum, many0(underscore_alpha_alphanum)))(input)
+pub fn alphaword_many0_underscore_alphaword(input: &str) -> IResult<&str, &str> {
+    recognize(pair(alphaword, many0(underscore_alphaword)))(input)
 }
-/// Given a str starting with an alpha_alphanum, and followed by zero or more underscore_alpha_alphamums,
+/// Given a str starting with an alphaword, and followed by zero or more underscore_alpha_alphamums,
 /// parse it.
 ///
 /// # Examples
 ///
 /// ```
-/// use cfgparser::alpha_alphanum_underscore_alphanum_seq;
+/// use cfgparser::alphaword_many0_underscore_word;
 /// use nom::combinator::complete;
 ///
-/// let result = complete(alpha_alphanum_underscore_alphanum_seq)("fred1_1bla_foobar");
+/// let result = complete(alphaword_many0_underscore_word)("fred1_1bla_foobar");
 /// assert_eq!(result, Ok(("","fred1_1bla_foobar")));
 /// ```
-pub fn alpha_alphanum_underscore_alphanum_seq(input: &str) -> IResult<&str, &str> {
-    recognize(pair(alpha_alphanum, many0(underscore_alphanum)))(input)
+pub fn alphaword_many0_underscore_word(input: &str) -> IResult<&str, &str> {
+    recognize(pair(alphaword, many0(underscore_word)))(input)
 }
 
 // match a basic header. That is something that matches the following pattern:
@@ -155,7 +164,7 @@ fn header(input: &str) -> IResult<&str, &str> {
         space0,
         tag("["),
         space0,
-        alpha_alphanum_underscore_alphanum_seq,
+        alphaword_many0_underscore_word,
         space0,
         tag("]"),
         space0,
@@ -210,7 +219,7 @@ where
 ///
 pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
-        alpha_alphanum_underscore_alpha_alphanum_seq,
+        alphaword_many0_underscore_alphaword,
         space0,
         tag("="),
         space0,
@@ -222,7 +231,7 @@ pub fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
 }
 pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
     let result = tuple((
-        alpha_alphanum_underscore_alpha_alphanum_seq,
+        alphaword_many0_underscore_alphaword,
         space0,
         tag("="),
         space0,
