@@ -1,6 +1,6 @@
 [package]
 name = "cfgparser"
-version = "0.1.0"
+version = "0.3.0"
 authors = ["jlgerber <jlgerber@gmail.com>"]
 edition = "2018"
 
@@ -12,3 +12,4 @@ ordered = ["indexmap"]
 [dependencies]
 nom="5"
 indexmap = {version = "1.5", optional = true}
+prettytable-rs = "0.8"

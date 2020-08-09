@@ -108,18 +108,12 @@ mod key_value_pair {
         );
     }
     #[test]
-    fn given_invalid_input_can_partialy_parse() {
+    fn given_input_with_comment_can_parse() {
         fn parser(input: &str) -> IResult<&str, (&str, &str)> {
             key_value_pair(input)
         }
         let result = parser("another_key = 6053#@lichost3-64:27--@bb-fooby.d4.com");
-        assert_eq!(
-            result,
-            Ok((
-                "#@lichost3-64:27--@bb-fooby.d4.com",
-                ("another_key", "6053")
-            ))
-        );
+        assert_eq!(result, Ok(("", ("another_key", "6053"))));
     }
 }
 //
@@ -142,6 +136,15 @@ mod key_value_pair_line {
             key_value_pair_line(input)
         }
         let result = parser("  this_key = val123-543_bla   ");
+        assert_eq!(result, Ok(("", ("this_key", "val123-543_bla"))));
+    }
+
+    #[test]
+    fn given_valid_input_ending_with_comment_can_parse() {
+        fn parser(input: &str) -> IResult<&str, (&str, &str)> {
+            key_value_pair_line(input)
+        }
+        let result = parser("  this_key = val123-543_bla#   ");
         assert_eq!(result, Ok(("", ("this_key", "val123-543_bla"))));
     }
 }

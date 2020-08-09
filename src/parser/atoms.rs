@@ -6,6 +6,7 @@ use nom::character::complete::alpha1;
 use nom::character::complete::alphanumeric0;
 use nom::character::complete::alphanumeric1;
 use nom::character::complete::multispace0;
+use nom::character::complete::space0;
 use nom::combinator::recognize;
 use nom::multi::many0;
 use nom::sequence::pair;
@@ -110,6 +111,15 @@ pub fn space0_eol(input: &str) -> IResult<&str, &str> {
         recognize(pair(tag("#"), take_till(|c| c == '\n'))),
         // this is just zero or more spaces and optionally a \n
         multispace0,
+    ))(input)
+}
+/// either a space or a comment
+pub fn space0_comment0(input: &str) -> IResult<&str, &str> {
+    alt((
+        // this one doesnt (like if it is the last line of the file)
+        recognize(pair(tag("#"), take_till(|c| c == '\n'))),
+        // this is just zero or more spaces and optionally a \n
+        space0,
     ))(input)
 }
 

@@ -87,7 +87,7 @@ fn key_value_pair(input: &str) -> IResult<&str, (&str, &str)> {
         tag("="),
         space0,
         until_illegal_char,
-        space0,
+        space0_comment0,
     ))(input)?;
     let (remaining, (_, key, _, _, _, value, _)) = result;
     Ok((remaining, (key, value)))
@@ -102,10 +102,9 @@ pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
         tag("="),
         space0,
         until_illegal_char,
-        space0,
-        newline,
+        space0_eol,
     ))(input)?;
-    let (remaining, (_, key, _, _, _, value, _, _)) = result;
+    let (remaining, (_, key, _, _, _, value, _)) = result;
     Ok((remaining, (key, value)))
 }
 

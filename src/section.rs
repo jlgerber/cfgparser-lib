@@ -1,9 +1,14 @@
 #[cfg(feature = "ordered")]
 use indexmap::IndexMap as HashMap;
 
+#[cfg(feature = "ordered")]
+use indexmap::map::Iter;
+
+#[cfg(not(feature = "ordered"))]
+use std::collections::hash_map::Iter;
+
 #[cfg(not(feature = "ordered"))]
 use std::collections::HashMap;
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Section<'a> {
     name: &'a str,
@@ -24,6 +29,11 @@ impl<'a> Section<'a> {
     /// Insert a key and value into the items map
     pub fn insert(&mut self, key: &'a str, value: &'a str) -> Option<&'a str> {
         self.items.insert(key, value)
+    }
+
+    /// Retrieve an iterator over sections in the config
+    pub fn iter(&self) -> Iter<&str, &str> {
+        self.items.iter()
     }
 
     /// Convert a Section into a SectionOwned
