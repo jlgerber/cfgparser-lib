@@ -1,0 +1,67 @@
+use super::*;
+use nom::combinator::complete;
+use nom::error::ErrorKind;
+use nom::Err;
+
+mod alphaword {
+    use super::*;
+
+    #[test]
+    fn given_word_starting_with_letter_can_parse() {
+        fn parser(input: &str) -> IResult<&str, &str> {
+            complete(alphaword)(input)
+        }
+        let result = parser("a13b");
+        assert_eq!(result, Ok(("", "a13b")));
+    }
+
+    #[test]
+    fn given_word_starting_with_number_fails_to_parse() {
+        fn parser(input: &str) -> IResult<&str, &str> {
+            complete(alphaword)(input)
+        }
+        let result = parser("1abc");
+        assert_eq!(result, Err(Err::Error(("1abc", ErrorKind::Alpha))));
+    }
+}
+
+mod underscore {
+    use super::*;
+
+    // Here we are testing that the parser for an underscore followed
+    // by a word (a-zA-Z0-9) can parse
+    #[test]
+    fn given_input_starting_with_number_can_parse() {
+        fn parser(input: &str) -> IResult<&str, &str> {
+            complete(underscore_word)(input)
+        }
+        let result = parser("_1fofo");
+        assert_eq!(result, Ok(("", "_1fofo")));
+    }
+
+    #[test]
+    fn given_input_starting_with_letter_can_parse() {
+        fn parser(input: &str) -> IResult<&str, &str> {
+            complete(underscore_word)(input)
+        }
+        let result = parser("_fofo");
+        assert_eq!(result, Ok(("", "_fofo")));
+    }
+}
+
+mod alphaword_many0_underscore_word {
+    use super::*;
+
+    // test that the parser which takes a word starting with a letter followed by
+    // zero or more words separated by single underscores can parse. Note that other
+    // than the first word, we do not care if subsequent words start with a number or
+    // letter.
+    #[test]
+    fn given_input_starting_with_num_can_parse() {
+        fn parser(input: &str) -> IResult<&str, &str> {
+            complete(alphaword_many0_underscore_word)(input)
+        }
+        let result = parser("dude_123_1fofo");
+        assert_eq!(result, Ok(("", "dude_123_1fofo")));
+    }
+}

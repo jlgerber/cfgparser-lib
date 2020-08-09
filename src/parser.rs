@@ -8,74 +8,21 @@
 //!
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::alpha1;
-use nom::character::complete::alphanumeric0;
-use nom::character::complete::alphanumeric1;
-use nom::character::complete::multispace0;
+
 use nom::character::complete::newline;
+use nom::character::complete::space0;
 use nom::combinator::all_consuming;
 use nom::combinator::complete;
-use nom::{AsChar, InputTakeAtPosition};
-//use nom::character::complete::none_of;
-use nom::character::complete::space0;
-use nom::combinator::recognize;
 use nom::error::ParseError;
-use nom::multi::many0;
 use nom::multi::many1;
-use nom::sequence::pair;
-//use nom::sequence::preceded;
 use nom::sequence::terminated;
 use nom::sequence::tuple;
 use nom::IResult;
+use nom::{AsChar, InputTakeAtPosition};
 
+pub mod atoms;
 use crate::Section;
-
-/// Parse a str that starts with a letter, followed by zero or more
-/// letters and/or numbers
-///
-/// # Example
-///
-/// ```
-/// use cfgparser::alphaword;
-/// use nom::combinator::complete;
-///
-/// let result = complete(alphaword)("a123a5");
-/// assert_eq!(result, Ok(("","a123a5")));
-/// ```
-pub fn alphaword(input: &str) -> IResult<&str, &str> {
-    recognize(pair(alpha1, alphanumeric0))(input)
-}
-
-/// Parse a single underscore followed by an alphanum
-///
-/// # Example
-///
-/// ```
-/// use cfgparser::underscore_word;
-/// use nom::combinator::complete;
-///
-/// let result = complete(underscore_word)("_1foo1");
-/// assert_eq!(result, Ok(("","_1foo1")));
-/// ```
-pub fn underscore_word(input: &str) -> IResult<&str, &str> {
-    recognize(pair(tag("_"), alphanumeric1))(input)
-}
-
-/// Given a str starting with an alphaword, and followed by zero or more _words,
-/// parse it.
-///
-/// # Examples
-///
-/// ```
-/// use cfgparser::alphaword_many0_underscore_word;
-/// use nom::combinator::complete;
-///
-/// let result = complete(alphaword_many0_underscore_word)("fred1_1bla_foobar");
-/// assert_eq!(result, Ok(("","fred1_1bla_foobar")));
-/// ```
-pub fn alphaword_many0_underscore_word(input: &str) -> IResult<&str, &str> {
-    recognize(pair(alphaword, many0(underscore_word)))(input)
-}
+use atoms::*;
 
 // match a basic header. That is something that matches the following pattern:
 // [key]
@@ -166,11 +113,7 @@ pub fn key_value_pair_newline(input: &str) -> IResult<&str, (&str, &str)> {
 fn key_value_pair_line(input: &str) -> IResult<&str, (&str, &str)> {
     alt((key_value_pair_newline, complete(key_value_pair)))(input)
 }
-/// Optionally space prefixed end of line. This is broken out in order to
-/// facilitate adding support for comments
-pub fn space0_eol(input: &str) -> IResult<&str, &str> {
-    multispace0(input)
-}
+
 /// parse a section
 fn parse_section(input: &str) -> IResult<&str, Section> {
     let results = tuple((
