@@ -1,4 +1,7 @@
+use nom::branch::alt;
 use nom::bytes::complete::tag;
+use nom::bytes::complete::take;
+use nom::bytes::complete::take_till;
 use nom::character::complete::alpha1;
 use nom::character::complete::alphanumeric0;
 use nom::character::complete::alphanumeric1;
@@ -55,10 +58,59 @@ pub fn alphaword_many0_underscore_word(input: &str) -> IResult<&str, &str> {
     recognize(pair(alphaword, many0(underscore_word)))(input)
 }
 
-/// Optionally space prefixed end of line. This is broken out in order to
-/// facilitate adding support for comments
+/// This parser recognizes 3 conditions:
+///
+/// - a '#' followed by anything, up to and including a \n
+/// - a '#' followed by anything
+/// - a zero or more spaces followed by an optional \n
+///
+/// # Examples
+///
+/// ## Comment
+/// ```
+/// use cfgparser::parser::atoms::space0_eol;
+/// use nom::combinator::complete;
+///
+/// let result = complete(space0_eol)("# this is an example");
+/// assert_eq!(result, Ok(("", "# this is an example")));
+/// ```
+/// ## spaces
+/// ```
+/// use cfgparser::parser::atoms::space0_eol;
+/// use nom::combinator::complete;
+///
+/// let result = complete(space0_eol)("    ").unwrap();
+/// assert_eq!(result, (("","    ")) );
+/// ```
+///
+/// ## comment with newline
+/// ```
+/// use cfgparser::parser::atoms::space0_eol;
+/// use nom::combinator::complete;
+///
+/// let result = complete(space0_eol)("# this is an example\n");
+/// assert_eq!(result, Ok(("", "# this is an example\n")));
+/// ```
+/// ## spaces with newline
+/// ```
+/// use cfgparser::parser::atoms::space0_eol;
+/// use nom::combinator::complete;
+///
+/// let result = complete(space0_eol)("    \n").unwrap();
+/// assert_eq!(result, (("","    \n")) );
+/// ```
 pub fn space0_eol(input: &str) -> IResult<&str, &str> {
-    multispace0(input)
+    alt((
+        // this one ends in a \n
+        recognize(pair(
+            tag("#"),
+            recognize(pair(take_till(|c| c == '\n'), take(1usize))),
+        )),
+        // this one doesnt (like if it is the last line of the file)
+        recognize(pair(tag("#"), take_till(|c| c == '\n'))),
+        // this is just zero or more spaces and optionally a \n
+        multispace0,
+    ))(input)
 }
 
 #[cfg(test)]

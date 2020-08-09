@@ -65,3 +65,35 @@ mod alphaword_many0_underscore_word {
         assert_eq!(result, Ok(("", "dude_123_1fofo")));
     }
 }
+
+mod space0_eol {
+    use super::*;
+
+    #[test]
+    fn given_spaces() {
+        let result = space0_eol("     a");
+        assert_eq!(result, Ok(("a", "     ")));
+    }
+
+    #[test]
+    fn given_spaces_and_newline() {
+        let input = r#"        
+"#;
+        let result = space0_eol(input);
+        assert_eq!(result, Ok(("", "        \n")));
+    }
+
+    #[test]
+    fn given_hash_and_stuff() {
+        let result = space0_eol("# oh boy");
+        assert_eq!(result, Ok(("", "# oh boy")));
+    }
+
+    #[test]
+    fn given_hash_stuff_and_newline() {
+        let input = r#"# this is junk 
+"#;
+        let result = space0_eol(input);
+        assert_eq!(result, Ok(("", "# this is junk \n")));
+    }
+}
